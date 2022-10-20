@@ -48,17 +48,27 @@ local npc_greg_expensive_scan_interval =
 	searching) will occur every X seconds.")
 
 local npc_greg_force_download =
-	CreateConVar("npc_greg_force_download", 1, FCVAR_ARCHIVE,
+	CreateConVar("npc_greg_force_download", 0, FCVAR_ARCHIVE,
 	"If set to 1, clients will be forced to download greg resources \z
 	(restart required after changing).\n\z
 	WARNING: If this option is disabled, clients will be unable to see or \z
 	hear greg!")
 
+local npc_greg_attack_traitors =
+	CreateConVar("npc_greg_attack_traitors", 0, FCVAR_ARCHIVE,
+	"If set to 1, Greg will attack traitors as well as innocents, this has no effect on whether he will attack his summoner \z")
+
+local npc_greg_attack_summoner =
+	CreateConVar("npc_greg_attack_summoner", 0, FCVAR_ARCHIVE,
+	"If set to 1, Greg will attack the person who summoned him as well, has no effect on traitors if npc_greg_attack_traitors is set to 0 \z")
+
  -- So we don't spam voice TOO much.
 local TAUNT_INTERVAL = 1.2
 local PATH_INFRACTION_TIMEOUT = 5
 
-if npc_greg_force_download:GetBool() then
+local ai_ignoreplayers = GetConVar("ai_ignoreplayers")
+
+if false then
 	resource.AddWorkshop(workshopID)
 end
 
@@ -136,15 +146,16 @@ local function buildHidingSpotCache()
 		(SysTime() - rStart) * 1000))
 end
 
-local ai_ignoreplayers = GetConVar("ai_ignoreplayers")
-local function isValidTarget(ent)
+function ENT:isValidTarget(ent)
 	-- Ignore non-existant entities.
 	if not IsValid(ent) then return false end
 
 	-- Ignore dead players (or all players if `ai_ignoreplayers' is 1)
 	if ent:IsPlayer() then
 		if ai_ignoreplayers:GetBool() then return false end
-		return ent:Alive() and not ent:IsActiveTraitor()
+		if (not npc_greg_attack_summoner:GetBool()) and self.Summoner == ent then return false end
+		if (not npc_greg_attack_traitors:GetBool()) and ent:IsActiveTraitor() then return false end
+		return ent:Alive()
 	end
 
 	-- Ignore dead NPCs, other gregs, and dummy NPCs.
@@ -414,7 +425,7 @@ function ENT:GetNearestTarget()
 
 	for _, ent in pairs(acquirableEntities) do
 		-- Ignore invalid targets, of course.
-		if not isValidTarget(ent) then continue end
+		if not self:isValidTarget(ent) then continue end
 
 		-- Find the nearest target to chase.
 		local distSqr = distToSqr(getPos(ent), myPos)
@@ -434,7 +445,7 @@ function ENT:AttackNearbyTargets(radius)
 	local nearEntities = ents.FindInSphere(hitSource, radius)
 	local hit = false
 	for _, ent in pairs(nearEntities) do
-		if isValidTarget(ent) then
+		if self:isValidTarget(ent) then
 			local health = ent:Health()
 
 			if ent:IsPlayer() and IsValid(ent:GetVehicle()) then
@@ -480,12 +491,14 @@ function ENT:AttackNearbyTargets(radius)
 			ent:TakeDamageInfo(dmgInfo)
 
             local explode = ents.Create("env_explosion")
-		    explode:SetPos(tgt:GetPos())
+		    explode:SetPos(self:GetPos())
 		    explode:SetOwner(ply)
 		    explode:Spawn()
-		    explode:SetKeyValue("iMagnitude", "150")
+		    explode:SetKeyValue("iMagnitude", "0")
 		    explode:Fire("Explode", 0,0)
 		    explode:EmitSound("ambient/explosions/explode_4.wav", 400, 400)
+
+			self:Remove()
 
 			local newHealth = ent:Health()
 
@@ -574,6 +587,12 @@ function ENT:GetNearestUsableHidingSpot()
 	end
 
 	return nearestHidingSpot
+end
+
+function ENT:SetSummoner( plr )
+
+    self.Summoner = plr
+
 end
 
 function ENT:ClaimHidingSpot(hidingSpot)

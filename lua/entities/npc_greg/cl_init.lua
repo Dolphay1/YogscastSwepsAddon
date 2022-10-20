@@ -1,8 +1,9 @@
 include('shared.lua')
-
-local MAT_greg = Material("npc_greg/greg")
+local mat_greg = Material("npc_greg/greg")
 killicon.Add("npc_greg", "npc_greg/killicon", color_white)
 language.Add("npc_greg", "greg ")
+
+local changeInt = 0
 
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
@@ -22,11 +23,26 @@ function ENT:Initialize()
 		Vector(SPRITE_SIZE / 2, SPRITE_SIZE / 2, SPRITE_SIZE),
 		Vector(5, 5, 5)
 	)
+
 end
 
 local DRAW_OFFSET = SPRITE_SIZE / 2 * vector_up
 function ENT:DrawTranslucent()
-	render.SetMaterial(MAT_greg)
+
+	-- Advance gregs frame every 0.05 seconds or 20 times a second, I seriously have no clue how to do this any better
+	if CurTime() > changeInt then
+		local frame = mat_greg:GetInt("$frame")
+		frame = frame + 1
+		if frame > 7 then frame = 0 end
+
+		mat_greg:SetInt("$frame", frame)
+
+		changeInt = CurTime() + 0.05
+	end
+
+
+	render.SetMaterial(mat_greg)
+	
 
 	-- Get the normal vector from greg to the player's eyes, and then compute
 	-- a corresponding projection onto the xy-plane.

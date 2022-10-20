@@ -1,21 +1,21 @@
 if SERVER then
     AddCSLuaFile()
-	resource.AddFile("materials/vgui/ttt/icon_kevin23.png")
+	resource.AddFile("materials/vgui/ttt/icon_greg24.png")
 end
 
 if CLIENT then
-	SWEP.Icon = "vgui/ttt/icon_kevin23.png"
-	SWEP.PrintName = "Kevin"
+	SWEP.Icon = "vgui/ttt/icon_greg24.png"
+	SWEP.PrintName = "Greg Gun"
 	SWEP.Slot = 6
     SWEP.SlotPos = 6
 	SWEP.EquipMenuData = {
 		type = "Weapon",
-		desc = "Shoot a player and have them skip a part of Metal Gear Solid."
+		desc = "Summons Greg to do crimes."
 	}
 end
 
 game.AddAmmoType({
-	name = "boba_ammo",
+	name = "greg_ammo",
 	dmgtype = DMG_GENERIC,
 	tracer = 0,
 	plydmg = 0,
@@ -36,7 +36,7 @@ SWEP.Primary.Cone = 0.01
 SWEP.Primary.Automatic = false 
 SWEP.Primary.ClipSize = 1
 SWEP.Primary.DefaultClip = 1
-SWEP.Primary.Ammo = "boba_ammo"
+SWEP.Primary.Ammo = "greg_ammo"
 SWEP.AmmoEnt = "none"
 
 SWEP.UseHands = true 
@@ -52,6 +52,37 @@ SWEP.AllowDrop = true
 
 SWEP.IronSightsPos = Vector(-5.95, -1, 4.799)
 SWEP.IronSightsAng = Vector(0, 0, 0)
+
+function FindSpawnLocation(pos)
+    local offsets = {}
+
+    for i = 0, 360, 15 do
+        table.insert( offsets, Vector( math.sin( i ), math.cos( i ), 0 ) )
+    end
+
+        local midsize = Vector( 26, 26, 80 )
+        local tstart   = pos + Vector( 0, 0, midsize.z / 2 )
+
+        for i = 1, #offsets do
+            local o = offsets[ i ]
+            local v = tstart + o * midsize * 1.5
+
+            local t = {
+                start = v,
+                endpos = v,
+                filter = target,
+                mins = midsize / -2,
+                maxs = midsize / 2
+            }
+
+            local tr = util.TraceHull( t )
+
+            if not tr.Hit then return ( v - Vector( 0, 0, midsize.z/2 ) ) end
+            
+        end 
+
+        return pos
+end
 
 function SWEP:PrimaryAttack()
 	if self:Clip1() <= 0 then return end
@@ -75,48 +106,13 @@ function SWEP:PrimaryAttack()
 	bullet.TracerName = "PhyscannonImpact"
 
 	bullet.Callback = function(attacker, trace, damage)
-		local target = trace.Entity
-
-		if CLIENT and target:IsPlayer() then
-			target:ConCommand("act salute")
-			target:SetCanWalk(false)
-
-			timer.Simple(10, function() 
-				if target:Alive() then
-					target:SetCanWalk(true)
-				end
-			end )
-		end
-
-		if SERVER and target:IsPlayer() and target:Alive() then
-			
-			local Positions = {Vector(100,0,0), Vector(0,100,0), Vector(-100, 0, 0), Vector(0, -100, 0), Vector(75, 75, 0), Vector(-75, -75, 0), Vector(75, -75, 0), Vector(-75, 75, 0)}
-
-			for i, v in pairs(Positions) do
-				local ent = ents.Create("npc_combine_s")
-				local targetPos = target:GetPos()
-
-				ent:SetPos(targetPos + v)
-
-				ent:Spawn()
-				ent:DropToFloor()
-				ent:Give("weapon_shotgun")
-				ent:SetTarget(target)
-
-				timer.Simple(10, function() 
-					if ent:IsValid() then
-						ent:TakeDamage(1000, ent, ent)
-					end
-				end )
-			end
-
-			local ent = ents.Create("prop_physics")
-			ent:SetModel("models/props_doors/door03_slotted_left.mdl")
-
-			ent:SetPos(target:GetForward()*Vector(1, 1, 0)*50 + target:GetPos() + Vector(0, 0, 50))
-
+		if(trace.Hit and SERVER) then
+			local ent = ents.Create("npc_greg")
+			ent:SetPos(FindSpawnLocation(trace.HitPos))
 			ent:Spawn()
-			ent:DropToFloor()
+
+			ent:SetSummoner(attacker)
+
 		end
 	end
 
@@ -166,7 +162,7 @@ function SWEP:SecondaryAttack()
 
  function SWEP:WasBought(buyer)
 	if IsValid(buyer) then
-	   buyer:GiveAmmo( 1, "boba_ammo", true )
+	   buyer:GiveAmmo( 1, "greg_ammo", true )
 	end
  end
  

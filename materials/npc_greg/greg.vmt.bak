@@ -1,0 +1,12 @@
+"UnlitGeneric"
+{
+	"$basetexture" "npc_greg/greg"
+	"$alphatest" 1
+	
+	"Proxies"
+	{
+		"animatedTextureVar" "$basetexture"
+		"animatedTextureFrameNumVar" "$frame"
+		"animatedTextureFrameRate" "20"
+	}
+}
