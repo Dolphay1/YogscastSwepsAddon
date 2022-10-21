@@ -77,17 +77,6 @@ function SWEP:PrimaryAttack()
 	bullet.Callback = function(attacker, trace, damage)
 		local target = trace.Entity
 
-		if CLIENT and target:IsPlayer() then
-			target:ConCommand("act salute")
-			target:SetCanWalk(false)
-
-			timer.Simple(10, function() 
-				if target:Alive() then
-					target:SetCanWalk(true)
-				end
-			end )
-		end
-
 		if SERVER and target:IsPlayer() and target:Alive() then
 			
 			local Positions = {Vector(100,0,0), Vector(0,100,0), Vector(-100, 0, 0), Vector(0, -100, 0), Vector(75, 75, 0), Vector(-75, -75, 0), Vector(75, -75, 0), Vector(-75, 75, 0)}
