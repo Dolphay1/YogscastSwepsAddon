@@ -1,0 +1,11 @@
+{
+	"title"		:	"Yogscast Sweps Addon Pack",
+	"type"		:	"weapon",
+	"tags"		:	[ "roleplay", "fun" ],
+	"ignore"	:
+	[
+		"./.git",
+		".gitattributes",
+		".gitignore"
+	]
+}
